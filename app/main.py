@@ -6,10 +6,14 @@ from real_time.custom_search import CustomSearchClient
 
 def main():
     client = CustomSearchClient()
-    query = 'latest sports news'
+    query = 'batman'
     df = client.search(query)
+
+    # Test case to see if it can pull the raw content from a page
     if df is not None and not df.empty:
-        print(df)
+        first_result_full_content = df.iloc[0]['FullContent']
+        print("Full content of the first search result (text only):")
+        print(first_result_full_content)
     else:
         print('No results found or an error occurred.')
 
