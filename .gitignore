@@ -1,0 +1,57 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints
+
+# PyCharm specific
+.idea/
+
+# VS Code specific
+.vscode/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Logs and temporary files
+*.log
+*.out
+*.err
+*.swp
+*.swo
+
+# Cache
+*.cache
+*.pkl
+*.pickle
+
+# Unit test / coverage reports
+.coverage
+*.cover
+.hypothesis/
+
+# Data files (raw and processed)
+data/raw/
+data/processed/
+
+# API Keys and credentials
+*.env
+.env.*
+
+# macOS specific files
+.DS_Store
