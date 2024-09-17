@@ -3,8 +3,10 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from real_time.custom_search import CustomSearchClient
+from data.api_sports import get_live_scores
 
 def main():
+    # Custom search example
     client = CustomSearchClient()
     query = 'batman'
     df = client.search(query)
@@ -16,6 +18,14 @@ def main():
         print(first_result_full_content)
     else:
         print('No results found or an error occurred.')
+
+    # Rendering the api values
+    live_scores = get_live_scores()
+    if live_scores:
+        print("Live football scores:")
+        print(live_scores)
+    else:
+        print("Failed to retrieve live scores")
 
 if __name__ == '__main__':
     main()
