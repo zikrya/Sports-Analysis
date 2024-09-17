@@ -22,7 +22,3 @@ class RedisClient:
         except Exception as e:
             print(f"Error setting up Redis client: {e}")
             return None
-
-if __name__ == "__main__":
-    redis_client = RedisClient()
-    redis_connection = redis_client.setup_redis()
