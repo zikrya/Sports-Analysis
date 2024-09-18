@@ -16,7 +16,11 @@ class OpenAIClient:
         return cls._instance
 
     def ai_processor(self, prompt):
-        system_prompt = "You'll answer all questions well."
+        system_prompt = (
+            "You are an assistant that generates precise and context-aware search queries "
+            "based on user input for web scraping purposes. You must return the response "
+            "strictly in JSON format without any additional text or explanations."
+        )
 
         response = self.client.chat.completions.create(
             model="gpt-4o",
