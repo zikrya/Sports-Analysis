@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from src.config.config import BASE_URL, HEADERS
 from src.data.team_data_manager import load_team_data, get_team_id_by_name
 
-# Scrub game data with season/year
+# Scrub and display  game data
 def scrub_game_data(games, season):
     scrubbed_games = []
     for game in games:
@@ -16,6 +16,14 @@ def scrub_game_data(games, season):
             "away_team": game.get('teams', {}).get('away', {}).get('name', 'N/A'),
             "home_score": game.get('scores', {}).get('home', {}).get('total', 'N/A'),
             "away_score": game.get('scores', {}).get('away', {}).get('total', 'N/A'),
+            "possession_home": game.get('statistics', [{}])[0].get('statistics', {}).get('Ball Possession', 'N/A') if game.get('statistics') else 'N/A',
+            "possession_away": game.get('statistics', [{}])[1].get('statistics', {}).get('Ball Possession', 'N/A') if game.get('statistics') else 'N/A',
+            "shots_home": game.get('statistics', [{}])[0].get('statistics', {}).get('Total Shots', 'N/A') if game.get('statistics') else 'N/A',
+            "shots_away": game.get('statistics', [{}])[1].get('statistics', {}).get('Total Shots', 'N/A') if game.get('statistics') else 'N/A',
+            "passes_home": game.get('statistics', [{}])[0].get('statistics', {}).get('Passes', 'N/A') if game.get('statistics') else 'N/A',
+            "passes_away": game.get('statistics', [{}])[1].get('statistics', {}).get('Passes', 'N/A') if game.get('statistics') else 'N/A',
+            "fouls_home": game.get('statistics', [{}])[0].get('statistics', {}).get('Fouls', 'N/A') if game.get('statistics') else 'N/A',
+            "fouls_away": game.get('statistics', [{}])[1].get('statistics', {}).get('Fouls', 'N/A') if game.get('statistics') else 'N/A',
             "status": game.get('status', {}).get('short', 'N/A')
         }
         scrubbed_games.append(game_info)
@@ -67,14 +75,6 @@ def get_odds(game_id):
     response = requests.get(url, headers=HEADERS)
     data = response.json()
     print(f"Game Odds: {data}")
-    return data
-
-# Fetch live events for a game (placeholder for now)
-def get_live_events(game_id):
-    url = f"{BASE_URL}/games/events?id={game_id}"
-    response = requests.get(url, headers=HEADERS)
-    data = response.json()
-    print(f"Live Game Events: {data}")
     return data
 
 # Main function to run the program
