@@ -6,6 +6,21 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from src.config.config import BASE_URL, HEADERS
 from src.data.team_data_manager import load_team_data, get_team_id_by_name
 
+# Scrub game data with season/year
+def scrub_game_data(games, season):
+    scrubbed_games = []
+    for game in games:
+        game_info = {
+            "season": season,
+            "home_team": game.get('teams', {}).get('home', {}).get('name', 'N/A'),
+            "away_team": game.get('teams', {}).get('away', {}).get('name', 'N/A'),
+            "home_score": game.get('scores', {}).get('home', {}).get('total', 'N/A'),
+            "away_score": game.get('scores', {}).get('away', {}).get('total', 'N/A'),
+            "status": game.get('status', {}).get('short', 'N/A')
+        }
+        scrubbed_games.append(game_info)
+    return scrubbed_games
+
 # Fetch team games for a specific season
 def get_team_games_by_season(team_id, season):
     url = f"{BASE_URL}/games?team={team_id}&season={season}"
@@ -13,8 +28,10 @@ def get_team_games_by_season(team_id, season):
     data = response.json()
 
     if 'response' in data and data['response']:
-        print(f"Games for {season}: {data['response']}")
-        return data['response']
+        games = data['response']
+        scrubbed_data = scrub_game_data(games, season)
+        print(f"Scrubbed games for {season}: {scrubbed_data}")
+        return scrubbed_data
     else:
         print(f"No games data found for the {season} season.")
         return {}
