@@ -6,15 +6,20 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from src.config.config import BASE_URL, HEADERS
 from src.data.team_data_manager import load_team_data, get_team_id_by_name
 
-# Fetch team statsfor a game
-def get_team_statistics(game_id, team_id):
-    url = f"{BASE_URL}/games/statistics/teams?id={game_id}&team={team_id}"
+# Fetch team games for a specific season
+def get_team_games_by_season(team_id, season):
+    url = f"{BASE_URL}/games?team={team_id}&season={season}"
     response = requests.get(url, headers=HEADERS)
     data = response.json()
-    print(f"Team Game Statistics: {data}")
-    return data
 
-# Fetch player stats for a game
+    if 'response' in data and data['response']:
+        print(f"Games for {season}: {data['response']}")
+        return data['response']
+    else:
+        print(f"No games data found for the {season} season.")
+        return {}
+
+# Fetch player statistics for a game
 def get_player_statistics(game_id):
     url = f"{BASE_URL}/games/statistics/players?id={game_id}"
     response = requests.get(url, headers=HEADERS)
@@ -22,7 +27,16 @@ def get_player_statistics(game_id):
     print(f"Player Game Statistics: {data}")
     return data
 
-# Fetch current injuries
+# Fetch stats for multiple seasons
+def get_team_games_by_multiple_seasons(team_id, seasons):
+    all_season_data = {}
+    for season in seasons:
+        print(f"\nFetching games for the {season} season...")
+        season_data = get_team_games_by_season(team_id, season)
+        all_season_data[season] = season_data
+    return all_season_data
+
+# Fetch current injuries for a team
 def get_injuries(team_id):
     url = f"{BASE_URL}/injuries?team={team_id}"
     response = requests.get(url, headers=HEADERS)
@@ -64,23 +78,16 @@ def main():
         print(f"Team '{team_name}' not found.")
         return
 
-    # Example game ID (you could modify this to ask for a specific game ID)
-    game_id = 1985
+    # Seasons to fetch (e.g., last 10 years)
+    seasons = list(range(2013, 2024))
 
-    # Fetch and display team and player statistics
-    print(f"\nFetching statistics for {team_name}...")
-    team_stats = get_team_statistics(game_id, team_id)
-    player_stats = get_player_statistics(game_id)
+    # Fetch statistics for multiple seasons
+    print(f"\nFetching statistics for {team_name} for multiple seasons...")
+    multi_season_stats = get_team_games_by_multiple_seasons(team_id, seasons)
 
-    # Fetch additional data (optional)
-    print("\nFetching injuries...")
-    injuries = get_injuries(team_id)
-
-    print("\nFetching odds...")
-    odds = get_odds(game_id)
-
-    print("\nFetching live events (placeholder)...")
-    live_events = get_live_events(game_id)
+    # Print out the statistics for verification
+    print("\nMulti-season statistics fetched:")
+    print(multi_season_stats)
 
 if __name__ == "__main__":
     main()
