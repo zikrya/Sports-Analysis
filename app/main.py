@@ -10,17 +10,17 @@ from api_handler import fetch_team_stats
 
 
 async def fetch_data_for_team(team_name):
-    # Fetch both  data in parallel
+    # Fetch both API and web scraping data in parallel
     api_task = asyncio.create_task(fetch_team_stats(team_name))
-    search_task = asyncio.create_task(generate_and_store_search_data(team_name))
+    search_task = asyncio.create_task(generate_and_store_search_data(team_name, team_name))
 
-    # complete both tasks
+    # Wait for both tasks to complete
     await asyncio.gather(api_task, search_task)
 
 
-async def generate_and_store_search_data(question):
+async def generate_and_store_search_data(question, team_name):
     search_queries = generate_search_queries(question)
-    await perform_search_and_store(search_queries)
+    await perform_search_and_store(search_queries, team_name)
 
 
 async def main():
