@@ -77,34 +77,4 @@ def get_odds(game_id):
     print(f"Game Odds: {data}")
     return data
 
-# Main function to run the program
-def main():
-    # Load team data from the local JSON file
-    team_data = load_team_data()
 
-    if not team_data:
-        print("Team data not available. Exiting.")
-        return
-
-    # Ask user for team name
-    team_name = input("Enter the name of the team (e.g., 'Philadelphia Eagles'): ").strip()
-
-    # Get the team ID using the team name
-    team_id = get_team_id_by_name(team_name)
-    if team_id is None:
-        print(f"Team '{team_name}' not found.")
-        return
-
-    # Seasons to fetch (e.g., last 10 years)
-    seasons = list(range(2013, 2024))
-
-    # Fetch statistics for multiple seasons
-    print(f"\nFetching statistics for {team_name} for multiple seasons...")
-    multi_season_stats = get_team_games_by_multiple_seasons(team_id, seasons)
-
-    # Print out the statistics for verification
-    print("\nMulti-season statistics fetched:")
-    print(multi_season_stats)
-
-if __name__ == "__main__":
-    main()
