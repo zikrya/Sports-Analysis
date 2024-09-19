@@ -26,7 +26,12 @@ def scrub_game_data(games, season):
             "fouls_away": game.get('statistics', [{}])[1].get('statistics', {}).get('Fouls', 'N/A') if game.get('statistics') else 'N/A',
             "status": game.get('status', {}).get('short', 'N/A')
         }
-        scrubbed_games.append(game_info)
+
+        # Remove key-value pairs with "N/A" values
+        scrubbed_game_info = {k: v for k, v in game_info.items() if v != 'N/A'}
+
+        scrubbed_games.append(scrubbed_game_info)
+
     return scrubbed_games
 
 # Fetch team games for a specific season
