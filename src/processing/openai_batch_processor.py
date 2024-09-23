@@ -19,7 +19,18 @@ class OpenAIClient:
     # Function to process prompts with retry logic and exponential backoff
     async def ai_processor(self, prompt, retries=3, backoff_factor=2):
         system_prompt = (
-            "You are an assistant. Summarize the following content in a concise manner, retaining only the key points and omitting unnecessary details."
+            "You are an intelligent assistant that specializes in analyzing complex datasets. Your task is to identify trends and key insights across various aspects of sports data, such as player injuries, performance metrics, weather impact, and external factors. "
+        "Provide a comprehensive analysis that highlights patterns, correlations, and actionable insights for each of these categories."
+        )
+
+        user_prompt = (
+            f"Analyze the following data and generate trends for the team. Break the analysis into the following categories:\n\n"
+        "1. **Injuries**: Identify patterns or trends related to player injuries, including frequency, severity, and their impact on the team’s overall performance. Highlight whether certain positions or players are more prone to injuries and examine any correlation between injuries and game outcomes.\n"
+        "2. **Performance Metrics**: Analyze the team’s key performance metrics, including passing accuracy, defense efficiency, scoring trends, and individual player statistics. Identify any trends in performance across multiple games, particularly under conditions such as injuries, substitutions, or changes in player roles.\n"
+        "3. **Weather Impact**: Evaluate how weather conditions (rain, wind, temperature) affected the team's gameplay. Identify patterns where specific weather conditions correlate with better or worse performance, including potential impacts on passing, rushing, and defense.\n"
+        "4. **External Factors**: Examine external factors such as player morale, public sentiment, and off-field events (e.g., contract disputes, personal life issues). Identify recurring themes and trends that influenced individual and team performance, as well as game outcomes.\n\n"
+        f"Data: {prompt}\n"
+        "Provide a well-structured, coherent analysis that considers all available information."
         )
 
         for attempt in range(retries):
@@ -28,7 +39,7 @@ class OpenAIClient:
                     model="gpt-4o",
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
+                        {"role": "user", "content": user_prompt}
                     ]
                 )
                 print(response)
