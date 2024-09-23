@@ -31,8 +31,8 @@ def clean_article(content):
 
     return '. '.join(important_sentences)
 
-# fetch data based on tags
-def fetch_data_by_tags(team_name, tags):
+# fetch data for all tags available in the Redis database
+def fetch_data_for_all_tags(team_name):
     # Initialize Redis client
     redis_client = RedisClient().setup_redis()
 
@@ -41,20 +41,30 @@ def fetch_data_by_tags(team_name, tags):
 
     if not raw_content:
         print(f"No web content found for team {team_name}")
-        return []
+        return {}
 
     try:
         # Deserialize JSON
         team_content = json.loads(raw_content)
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
-        return []
+        return {}
 
-    # Filter the content based on the tags and clean it
-    filtered_data = [
-        {"content": clean_article(article['content']), "tags": article['tags']}
-        for article in team_content
-        if any(tag in article['tags'] for tag in tags)
-    ]
+    if isinstance(team_content, list):  # Verify that the content is a list of articles
+        print(f"Team content format is correct, processing articles...")
 
-    return filtered_data
+        # Create a dictionary to store articles by tag
+        categorized_data = {}
+
+        for article in team_content:
+            if isinstance(article, dict) and 'content' in article and 'tags' in article:
+                cleaned_content = clean_article(article['content'])
+                for tag in article['tags']:
+                    if tag not in categorized_data:
+                        categorized_data[tag] = []
+                    categorized_data[tag].append({"content": cleaned_content, "tags": article['tags']})
+
+        return categorized_data
+    else:
+        print(f"Unexpected format for team content: {type(team_content)}")
+        return {}

@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 import asyncio
 import time
+
 class OpenAIClient:
     _instance = None
 
@@ -20,23 +21,23 @@ class OpenAIClient:
     async def ai_processor(self, prompt, retries=3, backoff_factor=2):
         system_prompt = (
             "You are an intelligent assistant that specializes in analyzing complex datasets. Your task is to identify trends and key insights across various aspects of sports data, such as player injuries, performance metrics, weather impact, and external factors. "
-        "Provide a comprehensive analysis that highlights patterns, correlations, and actionable insights for each of these categories."
+            "Provide a comprehensive analysis that highlights patterns, correlations, and actionable insights for each of these categories."
         )
 
         user_prompt = (
             f"Analyze the following data and generate trends for the team. Break the analysis into the following categories:\n\n"
-        "1. **Injuries**: Identify patterns or trends related to player injuries, including frequency, severity, and their impact on the team’s overall performance. Highlight whether certain positions or players are more prone to injuries and examine any correlation between injuries and game outcomes.\n"
-        "2. **Performance Metrics**: Analyze the team’s key performance metrics, including passing accuracy, defense efficiency, scoring trends, and individual player statistics. Identify any trends in performance across multiple games, particularly under conditions such as injuries, substitutions, or changes in player roles.\n"
-        "3. **Weather Impact**: Evaluate how weather conditions (rain, wind, temperature) affected the team's gameplay. Identify patterns where specific weather conditions correlate with better or worse performance, including potential impacts on passing, rushing, and defense.\n"
-        "4. **External Factors**: Examine external factors such as player morale, public sentiment, and off-field events (e.g., contract disputes, personal life issues). Identify recurring themes and trends that influenced individual and team performance, as well as game outcomes.\n\n"
-        f"Data: {prompt}\n"
-        "Provide a well-structured, coherent analysis that considers all available information."
+            "1. **Injuries**: Identify patterns or trends related to player injuries, including frequency, severity, and their impact on the team’s overall performance. Highlight whether certain positions or players are more prone to injuries and examine any correlation between injuries and game outcomes.\n"
+            "2. **Performance Metrics**: Analyze the team’s key performance metrics, including passing accuracy, defense efficiency, scoring trends, and individual player statistics. Identify any trends in performance across multiple games, particularly under conditions such as injuries, substitutions, or changes in player roles.\n"
+            "3. **Weather Impact**: Evaluate how weather conditions (rain, wind, temperature) affected the team's gameplay. Identify patterns where specific weather conditions correlate with better or worse performance, including potential impacts on passing, rushing, and defense.\n"
+            "4. **External Factors**: Examine external factors such as player morale, public sentiment, and off-field events (e.g., contract disputes, personal life issues). Identify recurring themes and trends that influenced individual and team performance, as well as game outcomes.\n\n"
+            f"Data: {prompt}\n"
+            "Provide a well-structured, coherent analysis that considers all available information."
         )
 
         for attempt in range(retries):
             try:
                 response = self.client.chat.completions.create(
-                    model="gpt-4o",
+                    model="gpt-4",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
@@ -64,48 +65,41 @@ class OpenAIClient:
                 return None
 
 # Batch data into smaller chunks
-def batch_data(preprocessed_data, batch_size=5):
-    batched_data = {"injury": [], "weather": [], "performance": [], "general": []}
+def batch_data_by_tags(data_by_tag, batch_size=5):
+    batched_data = {}
 
-    for article in preprocessed_data:
-        if "injury" in article['tags']:
-            batched_data["injury"].append(article)
-        elif "weather" in article['tags']:
-            batched_data["weather"].append(article)
-        elif "performance" in article['tags']:
-            batched_data["performance"].append(article)
-        else:
-            batched_data["general"].append(article)
-
-    # Break data into chunks
-    for category in batched_data:
-        batched_data[category] = [
-            batched_data[category][i:i + batch_size]
-            for i in range(0, len(batched_data[category]), batch_size)
+    # Create batches for each tag category
+    for tag, articles in data_by_tag.items():
+        batched_data[tag] = [
+            articles[i:i + batch_size]
+            for i in range(0, len(articles), batch_size)
         ]
 
     return batched_data
 
-# Asynchronously  batches with chunking and retry logic
+# Asynchronously process batches with chunking and retry logic
 async def process_batches(client, batched_data):
-    results = {"injury": [], "weather": [], "performance": [], "general": []}
+    results = {}
 
-    for category, articles in batched_data.items():
-        for batch in articles:
+    for tag, batches in batched_data.items():
+        results[tag] = []
+
+        for batch in batches:
             tasks = []
             for article in batch:
-                tasks.append(client.ai_processor(article['content']))
+                tasks.append(client.ai_processor(article))
 
+            # Await and collect all responses for the current batch
             responses = await asyncio.gather(*tasks)
-            results[category].extend(responses)
+            results[tag].extend(responses)
 
     return results
 
-async def process_team_data(preprocessed_data, team_name):
+async def process_team_data(data_by_tag, team_name):
     client = OpenAIClient()
 
-    # Batch the data
-    batched_data = batch_data(preprocessed_data)
+    # Batch the data by tags
+    batched_data = batch_data_by_tags(data_by_tag)
 
     # Process batches asynchronously
     ai_responses = await process_batches(client, batched_data)
