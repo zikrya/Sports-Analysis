@@ -11,3 +11,8 @@ class Player(Base):
     team_id = Column(Integer, ForeignKey('teams.id'))
 
     team = relationship("Team", back_populates="players")
+    injuries = relationship("Injury", back_populates="player")
+    performances = relationship("Performance", back_populates="player")
+
+    def __repr__(self):
+        return f"<Player(id={self.id}, name={self.name}, position={self.position})>"

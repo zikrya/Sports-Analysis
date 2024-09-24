@@ -1,3 +1,4 @@
+from xmlrpc.client import DateTime
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from config.db import Base
@@ -10,6 +11,10 @@ class Performance(Base):
     player_id = Column(Integer, ForeignKey('players.id'))
     metric_name = Column(String)
     metric_value = Column(Integer)
+    recorded_at = Column(DateTime)
 
     player = relationship("Player", back_populates="performances")
-    game = relationship("Game")
+    game = relationship("Game", back_populates="performances")
+
+    def __repr__(self):
+        return f"<Performance(player_id={self.player_id}, game_id={self.game_id}, metric_name={self.metric_name})>"

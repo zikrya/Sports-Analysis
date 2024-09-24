@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from config.db import Base
 
@@ -11,6 +11,10 @@ class Injury(Base):
     injury_type = Column(String)
     severity = Column(String)
     recovery_time = Column(Integer)
+    recorded_at = Column(DateTime)
 
     player = relationship("Player", back_populates="injuries")
-    game = relationship("Game")
+    game = relationship("Game", back_populates="injuries")
+
+    def __repr__(self):
+        return f"<Injury(player_id={self.player_id}, game_id={self.game_id}, injury_type={self.injury_type})>"
