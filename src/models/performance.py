@@ -1,5 +1,4 @@
-from xmlrpc.client import DateTime
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from config.db import Base
 

@@ -3,6 +3,12 @@ import os
 from dotenv import load_dotenv
 import asyncio
 import time
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import insert
+from models.ai_response import AIResponse
+from models.external_factor import ExternalFactor
+from config.db import get_db
+from datetime import datetime
 
 class OpenAIClient:
     _instance = None
@@ -10,7 +16,7 @@ class OpenAIClient:
     def __new__(cls):
         if cls._instance is None:
             load_dotenv()
-            api_key = os.getenv('OPENAI_API_KEY')
+            openai.api_key = os.getenv('OPENAI_API_KEY')
 
             cls._instance = super(OpenAIClient, cls).__new__(cls)
             cls.client = openai
@@ -20,18 +26,18 @@ class OpenAIClient:
     # Function to process prompts with retry logic and exponential backoff
     async def ai_processor(self, prompt, retries=3, backoff_factor=2):
         system_prompt = (
-            "You are an intelligent assistant that specializes in analyzing complex datasets. Your task is to identify trends and key insights across various aspects of sports data, such as player injuries, performance metrics, weather impact, and external factors. "
-            "Provide a comprehensive analysis that highlights patterns, correlations, and actionable insights for each of these categories."
+            "You are an intelligent assistant that specializes in analyzing sports data. "
+            "Your task is to analyze trends in player injuries, performance metrics, weather impact, and external factors. "
+            "Provide a comprehensive analysis that includes actionable insights and correlations."
         )
 
         user_prompt = (
             f"Analyze the following data and generate trends for the team. Break the analysis into the following categories:\n\n"
-            "1. **Injuries**: Identify patterns or trends related to player injuries, including frequency, severity, and their impact on the team’s overall performance. Highlight whether certain positions or players are more prone to injuries and examine any correlation between injuries and game outcomes.\n"
-            "2. **Performance Metrics**: Analyze the team’s key performance metrics, including passing accuracy, defense efficiency, scoring trends, and individual player statistics. Identify any trends in performance across multiple games, particularly under conditions such as injuries, substitutions, or changes in player roles.\n"
-            "3. **Weather Impact**: Evaluate how weather conditions (rain, wind, temperature) affected the team's gameplay. Identify patterns where specific weather conditions correlate with better or worse performance, including potential impacts on passing, rushing, and defense.\n"
-            "4. **External Factors**: Examine external factors such as player morale, public sentiment, and off-field events (e.g., contract disputes, personal life issues). Identify recurring themes and trends that influenced individual and team performance, as well as game outcomes.\n\n"
+            "1. **Injuries**: Trends related to injuries (frequency, severity, and their impact).\n"
+            "2. **Performance Metrics**: Key performance trends such as passing accuracy, defense efficiency, and player stats.\n"
+            "3. **Weather Impact**: How weather conditions (rain, wind, temperature) affected gameplay.\n"
+            "4. **External Factors**: Impact of off-field events, morale, public sentiment, etc.\n\n"
             f"Data: {prompt}\n"
-            "Provide a well-structured, coherent analysis that considers all available information."
         )
 
         for attempt in range(retries):
@@ -43,10 +49,9 @@ class OpenAIClient:
                         {"role": "user", "content": user_prompt}
                     ]
                 )
-                print(response)
                 print( response.choices[0].message.content)
                 return response.choices[0].message.content.strip()
-            except openai.RateLimitError as e:
+            except openai.error.RateLimitError as e:
                 if attempt < retries - 1:
                     sleep_time = backoff_factor ** attempt
                     print(f"Rate limit hit. Retrying in {sleep_time} seconds...")
@@ -54,12 +59,6 @@ class OpenAIClient:
                 else:
                     print(f"RateLimitError: {e}. Max retries reached. Exiting...")
                     return None
-            except openai.APIError as e:
-                print(f"OpenAI API error: {e}")
-                return None
-            except openai.APIConnectionError as e:
-                print(f"Failed to connect to OpenAI API: {e}")
-                return None
             except Exception as e:
                 print(f"An unexpected error occurred: {e}")
                 return None
@@ -77,32 +76,49 @@ def batch_data_by_tags(data_by_tag, batch_size=5):
 
     return batched_data
 
-# Asynchronously process batches with chunking and retry logic
-async def process_batches(client, batched_data):
+# Asynchronously process batches with chunking and save raw AI responses to DB
+async def process_batches(client, batched_data, team_id, db_session: AsyncSession):
     results = {}
 
     for tag, batches in batched_data.items():
         results[tag] = []
 
         for batch in batches:
-            tasks = []
-            for article in batch:
-                tasks.append(client.ai_processor(article))
-
-            # Await and collect all responses for the current batch
+            tasks = [client.ai_processor(article) for article in batch]
             responses = await asyncio.gather(*tasks)
+
+            # Save raw AI responses to the DB
+            await save_ai_results_to_db(responses, tag, team_id, db_session)
+
             results[tag].extend(responses)
 
     return results
 
-async def process_team_data(data_by_tag, team_name):
+# Save AI response to the database in the AIResponses table
+async def save_ai_results_to_db(ai_responses, category, team_id, db_session: AsyncSession):
+    for response in ai_responses:
+        if not response:
+            continue
+
+        # Store raw AI response in the AIResponses table
+        new_ai_response = AIResponse(
+            team_id=team_id,
+            response_text=response,
+            category=category,
+            generated_at=datetime.utcnow()
+        )
+        db_session.add(new_ai_response)
+    await db_session.commit()
+
+# Process team data, batching and saving results
+async def process_team_data(data_by_tag, team_name, team_id, db_session: AsyncSession):
     client = OpenAIClient()
 
-    # Batch the data by tags
+    # Batch data by tags
     batched_data = batch_data_by_tags(data_by_tag)
 
-    # Process batches asynchronously
-    ai_responses = await process_batches(client, batched_data)
+    # Process batches and save AI responses to DB
+    ai_responses = await process_batches(client, batched_data, team_id, db_session)
 
     print(f"Processed data for team {team_name}")
     return ai_responses
