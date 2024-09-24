@@ -1,10 +1,25 @@
-import asyncpg
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env
 load_dotenv()
 
-async def connect_db():
-    conn = await asyncpg.connect(os.getenv('DB_CONNECTION_STRING'))
-    return conn
+DATABASE_URL = os.getenv('DB_CONNECTION_STRING')
+
+engine = create_async_engine(DATABASE_URL, echo=True)
+
+AsyncSessionLocal = sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
+
+Base = declarative_base()
+
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
