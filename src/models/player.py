@@ -10,9 +10,8 @@ class Player(Base):
     position = Column(String)
     team_id = Column(Integer, ForeignKey('teams.id'))
 
+    # Back-reference to the team
     team = relationship("Team", back_populates="players")
-    injuries = relationship("Injury", back_populates="player")
-    performances = relationship("Performance", back_populates="player")
 
     def __repr__(self):
         return f"<Player(id={self.id}, name={self.name}, position={self.position})>"
