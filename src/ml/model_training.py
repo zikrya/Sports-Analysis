@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -19,7 +19,7 @@ data = load_data(file_path)
 
 if data is not None:
     # Drop non-numeric columns
-    data = data.drop(columns=['date', 'notes'], errors='ignore')  # Drop 'notes' and 'date' columns if present
+    data = data.drop(columns=['date', 'notes'], errors='ignore')
 
     # Handle missing values
     numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns
@@ -47,21 +47,36 @@ if data is not None:
     # Cross-Validation with StratifiedKFold ##
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-    # Evaluate Logistic Regression with cross-validation
-    logreg = LogisticRegression(max_iter=1000, penalty='l2', C=0.1)  # L2 regularization with C=0.1
-    logreg_cv_scores = cross_val_score(logreg, X_train_scaled, y_train, cv=skf, scoring='accuracy')
-    print(f"Cross-validated accuracy for Logistic Regression: {logreg_cv_scores.mean()}")
+    # GridSearchCV for Logistic Regression Hyperparameter Tuning
+    logreg = LogisticRegression(max_iter=1000, penalty='l2')  # Base model
+    logreg_params = {
+        'C': [0.01, 0.1, 1, 10],
+        'solver': ['newton-cg', 'lbfgs', 'liblinear']
+    }
+    grid_logreg = GridSearchCV(logreg, logreg_params, cv=skf, scoring='accuracy', n_jobs=-1)
+    grid_logreg.fit(X_train_scaled, y_train)
+    print(f"Best Logistic Regression Params: {grid_logreg.best_params_}")
+    print(f"Best Logistic Regression Cross-Validated Accuracy: {grid_logreg.best_score_}")
 
-    # Evaluate Random Forest with cross-validation
-    rf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42)
-    rf_cv_scores = cross_val_score(rf, X_train, y_train, cv=skf, scoring='accuracy')
-    print(f"Cross-validated accuracy for Random Forest: {rf_cv_scores.mean()}")
+    # GridSearchCV for Random Forest Hyperparameter Tuning
+    rf = RandomForestClassifier(random_state=42)  # Base model
+    rf_params = {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [10, 20, 30],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4]
+    }
+    grid_rf = GridSearchCV(rf, rf_params, cv=skf, scoring='accuracy', n_jobs=-1)
+    grid_rf.fit(X_train, y_train)
+    print(f"Best Random Forest Params: {grid_rf.best_params_}")
+    print(f"Best Random Forest Cross-Validated Accuracy: {grid_rf.best_score_}")
 
     # XGBoost with Early Stopping
     dtrain = xgb.DMatrix(X_train, label=y_train)
     dval = xgb.DMatrix(X_test, label=y_test)
 
-    params = {
+    # XGBoost parameter tuning
+    xgb_params = {
         'objective': 'multi:softmax',
         'eval_metric': 'mlogloss',
         'num_class': len(set(y)),
@@ -72,47 +87,44 @@ if data is not None:
         'subsample': 0.7,
         'colsample_bytree': 0.7,
         'lambda': 2.0,
-        'alpha': 1.0
+        'alpha': 1.0,
+        'min_child_weight': 1
     }
 
-    # XGBoost model with early stopping
     evals = [(dtrain, 'train'), (dval, 'eval')]
-    xgb_model = xgb.train(params, dtrain, num_boost_round=500, evals=evals, early_stopping_rounds=10, verbose_eval=True)
+    xgb_model = xgb.train(xgb_params, dtrain, num_boost_round=500, evals=evals, early_stopping_rounds=10, verbose_eval=True)
 
-    # Predictions using XGBoost
-    y_pred_xgb = xgb_model.predict(dval)
+    # XGBoost Hyperparameter Tuning with GridSearchCV
+    xgb_grid_params = {
+        'max_depth': [3, 4, 5],
+        'min_child_weight': [1, 5, 10],
+        'colsample_bytree': [0.3, 0.7, 1.0],
+        'eta': [0.01, 0.05, 0.1]
+    }
+    xgb_cv_model = xgb.XGBClassifier(objective='multi:softmax', num_class=len(set(y)), eval_metric='mlogloss', seed=42)
+    grid_xgb = GridSearchCV(xgb_cv_model, xgb_grid_params, cv=skf, scoring='accuracy', n_jobs=-1)
+    grid_xgb.fit(X_train, y_train)
+    print(f"Best XGBoost Params: {grid_xgb.best_params_}")
+    print(f"Best XGBoost Cross-Validated Accuracy: {grid_xgb.best_score_}")
+
+    # Evaluate the best models on test data
+    best_logreg = grid_logreg.best_estimator_
+    best_rf = grid_rf.best_estimator_
+    best_xgb = grid_xgb.best_estimator_
+
+    y_pred_logreg = best_logreg.predict(X_test_scaled)
+    y_pred_rf = best_rf.predict(X_test)
+    y_pred_xgb = best_xgb.predict(X_test)
+
+    logreg_acc = accuracy_score(y_test, y_pred_logreg)
+    logreg_f1 = f1_score(y_test, y_pred_logreg, average='weighted')
+
+    rf_acc = accuracy_score(y_test, y_pred_rf)
+    rf_f1 = f1_score(y_test, y_pred_rf, average='weighted')
+
     xgb_acc = accuracy_score(y_test, y_pred_xgb)
     xgb_f1 = f1_score(y_test, y_pred_xgb, average='weighted')
 
+    print(f"Logistic Regression - Accuracy: {logreg_acc}, F1 Score: {logreg_f1}")
+    print(f"Random Forest - Accuracy: {rf_acc}, F1 Score: {rf_f1}")
     print(f"XGBoost - Accuracy: {xgb_acc}, F1 Score: {xgb_f1}")
-
-    # Cross-Validation
-    cv_results = xgb.cv(
-        params,
-        dtrain,
-        num_boost_round=500,
-        nfold=5,
-        metrics={'mlogloss'},
-        early_stopping_rounds=10,
-        seed=42
-    )
-    print("XGBoost CV results:")
-    print(cv_results)
-
-    logreg.fit(X_train_scaled, y_train)
-    y_pred_logreg = logreg.predict(X_test_scaled)
-    logreg_acc = accuracy_score(y_test, y_pred_logreg)
-    logreg_precision = precision_score(y_test, y_pred_logreg, average='weighted')
-    logreg_recall = recall_score(y_test, y_pred_logreg, average='weighted')
-    logreg_f1 = f1_score(y_test, y_pred_logreg, average='weighted')
-
-    rf.fit(X_train, y_train)
-    y_pred_rf = rf.predict(X_test)
-    rf_acc = accuracy_score(y_test, y_pred_rf)
-    rf_precision = precision_score(y_test, y_pred_rf, average='weighted')
-    rf_recall = recall_score(y_test, y_pred_rf, average='weighted')
-    rf_f1 = f1_score(y_test, y_pred_rf, average='weighted')
-
-    print(f"Logistic Regression - Accuracy: {logreg_acc}, Precision: {logreg_precision}, Recall: {logreg_recall}, F1 Score: {logreg_f1}")
-
-    print(f"Random Forest - Accuracy: {rf_acc}, Precision: {rf_precision}, Recall: {rf_recall}, F1 Score: {rf_f1}")
