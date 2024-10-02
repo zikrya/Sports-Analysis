@@ -1,47 +1,26 @@
 import os
-from newsapi import NewsApiClient
+from eventregistry import *
 from dotenv import load_dotenv
 
 load_dotenv()
 
 API_KEY = os.getenv('NEWS_API_KEY')
 
-# Initialize the NewsApiClient
-newsapi = NewsApiClient(api_key=API_KEY)
+er = EventRegistry(apiKey=API_KEY)
 
-def fetch_top_headlines():
-    """Fetches top headlines based on specific criteria."""
-    top_headlines = newsapi.get_top_headlines(
-        q='bitcoin',
-        category='business',
-        language='en',
-        country='us'
-    )
-    return top_headlines
-
-def fetch_all_articles():
-    """Fetches all articles based on a keyword and other filters within the past month."""
-    all_articles = newsapi.get_everything(
-        q='bitcoin',
-        sources='bbc-news,the-verge',
-        domains='bbc.co.uk,techcrunch.com',
-        from_param='2024-09-01',
-        to='2024-09-30',
-        language='en',
-        sort_by='relevancy',
-        page=2
-    )
-    return all_articles
-
+def fetch_articles(keyword, max_results=10):
+    q = QueryArticlesIter(keywords=keyword)
+    for art in q.execQuery(er, returnInfo=ReturnInfo(articleInfo=ArticleInfoFlags(body=True)), maxItems=max_results):
+        print(f"Title: {art.get('title', 'No title')}")
+        print(f"Author: {art.get('author', 'No author')}")
+        print(f"Source: {art.get('source', {}).get('title', 'No source')}")
+        print(f"Published At: {art.get('date', 'No date')}")
+        print(f"Content: {art.get('body', 'No content')}\n")
 def main():
-    """Main function to run the fetch methods."""
-    print("Fetching Top Headlines...")
-    headlines = fetch_top_headlines()
-    print(headlines)
-
-    print("\nFetching All Articles...")
-    articles = fetch_all_articles()
-    print(articles)
+    keyword = 'Bitcoin'
+    max_results = 5
+    print(f"Fetching articles about {keyword}...\n")
+    fetch_articles(keyword, max_results)
 
 if __name__ == '__main__':
     main()
