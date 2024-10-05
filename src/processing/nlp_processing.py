@@ -151,7 +151,7 @@ for the Eagles, Taliese Fuaga looking up at the scoreboard after an interception
 conversing before the game, as well as a photo credit for AP Photographers Butch Dill, Gerald Herbert, and Tyler Kaufman. The last two sentences in your message suggest that if someone is interested in high school sports, they can sign up for a weekly newsletter to
 receive updates and analysis on those games.
 '''
-response = process_chunks(model='testing', prompt=prompt)
+response = process_chunks(model='new-test', prompt=prompt)
 
 # Print the cleaned response
 print(response)
