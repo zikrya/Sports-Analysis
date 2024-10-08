@@ -11,39 +11,34 @@ headers = {
     'X-RapidAPI-Host': 'nfl-api-data.p.rapidapi.com'
 }
 
-urls = {
-    "team_stats": "https://nfl-api-data.p.rapidapi.com/nfl-team-statistics?year=2023&id=15",
-    "team_records": "https://nfl-api-data.p.rapidapi.com/nfl-team-record?id=15&year=2023",
-    "team_injuries": "https://nfl-api-data.p.rapidapi.com/nfl-team-injuries?id=15",
-    "team_odds": "https://nfl-api-data.p.rapidapi.com/nfl-team-oddsrecords?id=15&year=2023",
-    "team_leaders": "https://nfl-api-data.p.rapidapi.com/nfl-team-leaders?id=15&year=2023",
-    "game_summary": "https://nfl-api-data.p.rapidapi.com/nfl-gamesummary?id=401437954",
-    "game_boxscore": "https://nfl-api-data.p.rapidapi.com/nfl-boxscore?id=401437954",
-    "player_stats": "https://nfl-api-data.p.rapidapi.com/nfl-ath-statistics?id=15035&year=2023"
-}
+# Function to fetch data for a team by team_id
+def fetch_team_data(team_id):
+    urls = {
+        "team_stats": f"https://nfl-api-data.p.rapidapi.com/nfl-team-statistics?year=2023&id={team_id}",
+        "team_records": f"https://nfl-api-data.p.rapidapi.com/nfl-team-record?id={team_id}&year=2023",
+        "team_injuries": f"https://nfl-api-data.p.rapidapi.com/nfl-team-injuries?id={team_id}",
+        "team_odds": f"https://nfl-api-data.p.rapidapi.com/nfl-team-oddsrecords?id={team_id}&year=2023",
+        "team_leaders": f"https://nfl-api-data.p.rapidapi.com/nfl-team-leaders?id={team_id}&year=2023"
+    }
 
-def fetch_data(url):
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Error fetching data from {url}: {response.status_code}")
-        return None
+    # Fetch data from each endpoint
+    data = {}
+    for key, url in urls.items():
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data[key] = response.json()
+        else:
+            print(f"Error fetching {key} data for team {team_id}: {response.status_code}")
 
-team_stats = fetch_data(urls["team_stats"])
-team_records = fetch_data(urls["team_records"])
-team_injuries = fetch_data(urls["team_injuries"])
-team_odds = fetch_data(urls["team_odds"])
-team_leaders = fetch_data(urls["team_leaders"])
-game_summary = fetch_data(urls["game_summary"])
-game_boxscore = fetch_data(urls["game_boxscore"])
-player_stats = fetch_data(urls["player_stats"])
+    return data
 
-print("Team Stats:", team_stats)
-print("Team Records:", team_records)
-print("Team Injuries:", team_injuries)
-print("Team Odds:", team_odds)
-print("Team Leaders:", team_leaders)
-print("Game Summary:", game_summary)
-print("Game Boxscore:", game_boxscore)
-print("Player Stats:", player_stats)
+# Test fetching data for two teams
+if __name__ == "__main__":
+    team_1_id = input("Enter Team 1 ID: ")
+    team_2_id = input("Enter Team 2 ID: ")
+
+    team_1_data = fetch_team_data(team_1_id)
+    team_2_data = fetch_team_data(team_2_id)
+
+    print(f"Team 1 Data: {team_1_data}")
+    print(f"Team 2 Data: {team_2_data}")
