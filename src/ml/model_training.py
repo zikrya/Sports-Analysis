@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from src.ml.data_loader import load_data
 
 # Load data
-file_path = "matches.csv"
+file_path = "ATL_PHI_combined_weekly_data.csv"
 data = load_data(file_path)
 
 if data is not None:
@@ -26,15 +26,21 @@ if data is not None:
     imputer = SimpleImputer(strategy='mean')
     data[numeric_columns] = imputer.fit_transform(data[numeric_columns])
 
-    #  Identify columns
+    # Identify categorical columns and encode them
     categorical_columns = data.select_dtypes(include=['object']).columns
     label_encoder = LabelEncoder()
     for col in categorical_columns:
         data[col] = label_encoder.fit_transform(data[col].astype(str))
 
+    # Convert the 'result' column to binary/multiclass target
+    # Example for binary classification (adjust thresholds if needed)
+    y = pd.cut(data['result'], bins=[-float('inf'), 0.5, float('inf')], labels=[0, 1])
+
+    # If you want multiclass classification, use the following:
+    # y = pd.cut(data['result'], bins=[-float('inf'), 0.33, 0.66, float('inf')], labels=[0, 1, 2])
+
     # Define features
     X = data.drop(columns=['result'])
-    y = data['result']
 
     # Split the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -44,7 +50,7 @@ if data is not None:
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    # Cross-Validation with StratifiedKFold ##
+    # Cross-Validation with StratifiedKFold
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
     # GridSearchCV for Logistic Regression Hyperparameter Tuning

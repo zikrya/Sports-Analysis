@@ -11,7 +11,7 @@ def load_data(file_path):
         return None
 
 if __name__ == "__main__":
-    file_path = "matches.csv"
+    file_path = "ATL_PHI_combined_weekly_data.csv"
     data = load_data(file_path)
 
     if data is not None:
