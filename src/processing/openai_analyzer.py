@@ -12,17 +12,13 @@ class OpenAIClient:
         return cls._instance
     def ai_processor(self, prompt):
         system_prompt = '''
-        I have game analysis data that includes team performances and key events:
+       I have game analysis data that includes team performances and key events. Please automatically identify the team names from the text and assign numerical scores based on the analysis. Generate scores for:
 
-Team A: '[Insert team A's analysis text here]'
-Team B: '[Insert team B's analysis text here]'
-Please assign numerical scores to each team's performance based on these descriptions. Generate scores for:
-
-Team morale (on a scale of 1 to 10)
-Offensive efficiency (on a scale of 1 to 10)
-Defensive performance (on a scale of 1 to 10)
-Key player impact (on a scale of 1 to 10 for each player mentioned)
-Provide the results in this structured format:
+Team morale (on a scale of 1.0 to 10.0, with one decimal precision).
+Offensive efficiency (on a scale of 1.0 to 10.0, with one decimal precision).
+Defensive performance (on a scale of 1.0 to 10.0, with one decimal precision).
+Key player impact (on a scale of 1.0 to 10.0 for each player mentioned).
+Provide the results as JSON only, with no additional text. Here's the structure of the JSON output:
 
 json
 Copy code
@@ -46,6 +42,7 @@ Copy code
     }
   }
 }
+Make sure to extract the actual team and player names from the text and return the scores in the specified format without any other text.
         '''
         response = self.client.chat.completions.create(
             model="gpt-4o",
