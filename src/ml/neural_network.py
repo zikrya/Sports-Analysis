@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Input, Dropout
 from sklearn.model_selection import train_test_split
 
 team_data = {
@@ -39,7 +39,7 @@ def prepare_team_data(team_data):
             ]
         )
     return np.array(features)
-
+a
 def prepare_historical_data(ml_data):
     return np.array(
         [
@@ -52,21 +52,27 @@ def prepare_historical_data(ml_data):
 team_features = prepare_team_data(team_data)
 ml_features = prepare_historical_data(historical_ml_data)
 
+# Combining team data and historical ML data
 X = np.hstack((team_features, np.tile(ml_features, (team_features.shape[0], 1))))
 
+# Assume some labels (win/lose) for training purposes (1 for win, 0 for lose)
 y = np.array([1, 0])
 
 # Split the data into train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-# Build the neural network model
+
 model = Sequential()
-model.add(Dense(64, input_dim=X_train.shape[1], activation='relu'))
+model.add(Input(shape=(X_train.shape[1],)))
+model.add(Dense(64, activation='relu'))
+model.add(Dropout(0.5))
 model.add(Dense(32, activation='relu'))
+model.add(Dropout(0.5))
 model.add(Dense(1, activation='sigmoid'))  # Binary  (win/lose)
 
 
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
 
 model.fit(X_train, y_train, epochs=50, batch_size=2, verbose=1)
 
